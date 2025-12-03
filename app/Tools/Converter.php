@@ -13,13 +13,35 @@ class Converter
 	 */
 	public static function currencyConverter($amount, $to, $from = 'USD')
 	{
-		$content = file_get_contents("https://api.exchangerate.host/convert?from=$from&to=$to&amount=$amount");
+		// Jika mata uang sama, langsung return amount
+		if (strtoupper($from) === strtoupper($to)) {
+			return number_format($amount, 2);
+		}
 
-		$respost = json_decode($content, true);
-		$price = $respost['result'];	
+		$url = "https://api.frankfurter.app/latest?amount=$amount&from=$from&to=$to";
 
-		return number_format($price, 2);			
+		// Fix jika Blade mengubah & menjadi &amp;
+		$url = str_replace('&amp;', '&', $url);
+
+		$content = @file_get_contents($url);
+
+		// Handle error HTTP
+		if ($content === false) {
+			return null; // atau bisa log error
+		}
+
+		$response = json_decode($content, true);
+
+		if (!isset($response['rates'][$to])) {
+			return null;
+		}
+
+		$price = $response['rates'][$to];
+
+		return number_format($price, 2);
 	}
+
+
 
 	/**
 	 * Returns the currency code
